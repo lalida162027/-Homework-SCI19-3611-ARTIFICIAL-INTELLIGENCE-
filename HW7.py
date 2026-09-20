@@ -1,3 +1,12 @@
+try:
+    import llm as api
+except ImportError:
+    import urllib.request
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/aofphy/"
+        "SCI193611_ARTIFICIAL_INTELLIGENCE/main/labs/llm.py", "llm.py")
+    import llm as api
+
 import json
 import random
 import re
@@ -260,3 +269,27 @@ if __name__ == "__main__":
  
     print("\n--- เดโม prompt injection ---")
     demo_prompt_injection(fake)
+
+    # สองผู้ให้บริการตามโจทย์: Ollama บนเครื่อง กับ OpenRouter รุ่นฟรี
+CANDIDATES = [
+    ("local", "qwen2.5:1.5b"),  # ใช้โมเดลขนาดเล็กที่คุณโหลดไว้ในเครื่อง
+    ("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
+]
+
+def working_llms(candidates=CANDIDATES, probe="ตอบว่า OK คำเดียว"):
+    """ยิงจริงหนึ่งครั้งต่อผู้ให้บริการ คืนเฉพาะตัวที่ตอบกลับได้"""
+    live = {}
+    for provider, model in candidates:
+        try:
+            api.resolve(provider=provider, model=model)
+            res = api.chat(probe)
+            print(f"{provider:12s} ตอบ: {res[:40]!r}")
+            live[provider] = res
+        except Exception as e:
+            print(f"{provider:12s} ใช้ไม่ได้: {type(e).__name__}: {str(e)[:70]}")
+    return live
+
+# โค้ดส่วนเช็กระบบจริงด้วย working_llms
+print(api.describe(api.resolve()))
+LIVE = working_llms()
+print("ต่อได้", len(LIVE), "ผู้ให้บริการ")
